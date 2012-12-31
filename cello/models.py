@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from urlparse import urlsplit
-from functools import wraps
 from lxml import html as lhtml
 
 from .helpers import Route, InvalidURLMapping
@@ -11,39 +10,44 @@ from .storage import MemoryCase
 stages = {}
 
 
-def one_or_many(func):
-    @wraps(func)
-    def wrapper(*args, **kw):
-        ret = func(*args, **kw)
-        total = len(ret)
-        if total == 1:
-            return ret[-1]
-        elif total > 1:
-            return ret
-        else:
-            return None
+class Query(object):
+    def __init__(self, dom):
+        self._dom = dom
+        self._elements = []
+        self._values = []
 
-    return wrapper
+    def query(self, selector):
+        self._elements = self._dom.cssselect(selector)
+        return self
+
+    def attr(self, name):
+        func = lambda i: i.attrib.get(name, self)
+        self._values = map(func, self._elements)
+        return self
+
+    def text(self):
+        return self._one_or_many(map(lambda i: i.text.strip(),
+                                     self._elements) or '')
+
+    def html(self):
+        return lhtml.tostring(self._elements)
+
+    def raw(self):
+        ret = self._values or self._elements
+        return self._one_or_many(ret)
+
+    def _one_or_many(self, ret):
+        return len(ret) is 1 and ret[-1] or ret
 
 
 class DOMWrapper(object):
     def __init__(self, dom):
         self.dom = dom
         self.current_nodes = []
+        self.__query = Query(dom)
 
     def query(self, selector):
-        self.current_nodes = self.dom.cssselect(selector)
-        return self
-
-    @one_or_many
-    def attr(self, name):
-        return map(lambda node: node.attrib.get(name, None),
-                   self.current_nodes)
-
-    @one_or_many
-    def text(self):
-        return map(lambda node: node.text.strip(),
-                   self.current_nodes)
+        return self.__query.query(selector)
 
     @classmethod
     def from_response(cls, response):
