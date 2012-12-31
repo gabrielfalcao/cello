@@ -44,7 +44,6 @@ class Query(object):
 class DOMWrapper(object):
     def __init__(self, dom):
         self.dom = dom
-        self.current_nodes = []
         self.__query = Query(dom)
 
     def query(self, selector):
@@ -98,7 +97,7 @@ class Stage(object):
             config=dict(screenshot=True),
         )
 
-    def run(self, link):
+    def proceed_to_next(self, link):
         if self.next_stage:
             stage = self.next_stage(self.browser, url=link, parent=self)
             stage.fetch()
@@ -111,7 +110,7 @@ class Stage(object):
 
     def scrape(self, links):
         for link in links:
-            stage = self.run(link)
+            stage = self.proceed_to_next(link)
             data = stage.tune()
 
             if not data:
@@ -138,4 +137,4 @@ class Stage(object):
     @classmethod
     def visit(Stage, browser):
         stage = Stage(browser)
-        stage.run(Stage.url)
+        stage.proceed_to_next(Stage.url)
