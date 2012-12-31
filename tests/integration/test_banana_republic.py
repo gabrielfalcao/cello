@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import re
-import json
+import os
 
 from sure import expect
-
 from cello import Stage, Route, Case
 from sleepyhollow import SleepyHollow
 
 
-class JSONFileCase(Case):
+class SayResultsCase(Case):
     def save(self, data):
-        filename = re.sub(r'\W', '', self.stage.url) + '.json'
-        with open(filename, 'w') as f:
-            f.write(json.dumps(data))
+        os.system('say %s' % data['name'])
+        os.system('open %s' % data['url'])
+        raise ValueError('awesome')
 
 
 class BananaRepublicProductRoute(Route):
@@ -23,21 +22,20 @@ class BananaRepublicProductRoute(Route):
 
 class EachProductBananaRepublic(Stage):
     route = BananaRepublicProductRoute
-    case = JSONFileCase
+    case = SayResultsCase
 
     def play(self):
         selector = r'a.productItemName'
-        links = self.dom.query(selector).attr('href')
+        links = self.dom.query(selector).attr('href').raw()
         self.scrape(links)
 
     def tune(self):
         data = {
-            'image': self.dom.query('#product_image').attr('src'),
+            'image': self.dom.query('#product_image').attr('src').raw(),
             'name': self.dom.query('#productNameText .productName').text(),
         }
-        assert data['image'] is not None
-        assert data['image'].endswith('jpg')
-        raise ValueError('nice scraper!')
+        assert data['image'].lower().endswith('jpg')
+        return data
 
 
 class EachCategoryBananaRepublic(Stage):
@@ -46,7 +44,7 @@ class EachCategoryBananaRepublic(Stage):
     def play(self):
         selector = r'ul li.idxBottomCat a'
         sale_only = lambda link: 'sale' in link
-        links = filter(sale_only, self.dom.query(selector).attr('href'))
+        links = filter(sale_only, self.dom.query(selector).attr('href').raw())
         self.scrape(links)
 
 
@@ -57,4 +55,5 @@ class BananaRepublic(Stage):
 
 def test_scraping():
     "Scraping from banana republic"
-    expect(BananaRepublic.visit).when.called_with(SleepyHollow()).should.throw(ValueError, 'nice scraper!')
+    expect(BananaRepublic.visit).when.called_with(
+        SleepyHollow()).to.throw('awesome')
