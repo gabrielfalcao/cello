@@ -4,7 +4,7 @@ from urlparse import urlsplit
 from lxml import html as lhtml
 
 from .helpers import Route, InvalidURLMapping
-from .storage import MemoryCase
+from .storage import Case
 
 
 class BadTuneReturnValue(Exception):
@@ -56,7 +56,7 @@ class DOMWrapper(object):
 
 class Stage(object):
     route = Route
-    case = MemoryCase
+    case = Case
     next_stage = None
 
     def __init__(self, browser, url=None, response=None, parent=None):
