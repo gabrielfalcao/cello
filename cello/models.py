@@ -7,9 +7,6 @@ from .helpers import Route, InvalidURLMapping
 from .storage import MemoryCase
 
 
-stages = {}
-
-
 class Query(object):
     def __init__(self, dom):
         self._dom = dom
@@ -54,17 +51,7 @@ class DOMWrapper(object):
         return cls(lhtml.fromstring(response.html))
 
 
-class MetaStage(type):
-    def __init__(cls, name, bases, attrs):
-        if name not in ('MetaStage', 'Stage'):
-            stages[name] = cls
-
-        return super(MetaStage, cls).__init__(name, bases, attrs)
-
-
 class Stage(object):
-    __metaclass__ = MetaStage
-
     route = Route
     case = MemoryCase
     next_stage = None
