@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from urlparse import urlsplit
 from lxml import html as lhtml
 
@@ -122,7 +123,10 @@ class Stage(object):
         self.fetch()
 
     def tune(self):
-        return {}
+        return {
+            'datetime': datetime.now().isoformat(),
+            'stage': self.__class__.__name__,
+        }
 
     def persist(self, data):
         final = {
