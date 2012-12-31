@@ -7,6 +7,10 @@ from .helpers import Route, InvalidURLMapping
 from .storage import MemoryCase
 
 
+class BadTuneReturnValue(Exception):
+    pass
+
+
 class Query(object):
     def __init__(self, dom):
         self._dom = dom
@@ -83,7 +87,9 @@ class Stage(object):
         if not self._url:
             raise ValueError('Want me to fetch without a url')
 
-        self.response = self.get_response(self.url)
+        if not self.response:
+            self.response = self.get_response(self.url)
+
         return self
 
     def get_response(self, url):
@@ -92,23 +98,24 @@ class Stage(object):
             config=dict(screenshot=True),
         )
 
-    def next(self):
-        response = self.get_response(self.url)
-        stage = self.next_stage(self.browser, response=response, parent=self)
-        stage.play()
+    def run(self, link):
+        if self.next_stage:
+            stage = self.next_stage(self.browser, url=link, parent=self)
+            stage.fetch()
+            stage.play()
+        else:
+            stage = self.__class__(self.browser, url=link, parent=self)
+            stage.fetch()
+
+        return stage
 
     def scrape(self, links):
         for link in links:
-            if self.next_stage:
-                stage = self.next_stage(self.browser, url=link, parent=self).fetch()
-                stage.play()
-
-            else:
-                stage = self.__class__(self.browser, url=link, parent=self).fetch()
-
+            stage = self.run(link)
             data = stage.tune()
+
             if not data:
-                raise ValueError('Cannot persist without data')
+                raise BadTuneReturnValue('Cannot persist without data')
 
             stage.persist(data)
 
@@ -130,5 +137,5 @@ class Stage(object):
 
     @classmethod
     def visit(Stage, browser):
-        stage = Stage(browser, url=Stage.url)
-        stage.next()
+        stage = Stage(browser)
+        stage.run(Stage.url)
