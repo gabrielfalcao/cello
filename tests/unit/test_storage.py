@@ -20,3 +20,12 @@ def test_case_save_has_access_to_stage():
     case = MyCase(stage)
 
     expect(case.save('foo')).to.equal('bar')
+
+
+def test_it_requires_an_implementation():
+    "A Case class must be implemented in order to work appropriately"
+
+    expect(Case(None).save).when.called_with('data').to.throw(
+        NotImplementedError,
+        'you have to inherit cello.storage.Case '
+        'and override the save method')

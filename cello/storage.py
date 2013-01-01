@@ -18,4 +18,6 @@ class Case(object):
         self.stage = stage
 
     def save(self, data):
-        pass
+        raise NotImplementedError(
+            'you have to inherit cello.storage.Case '
+            'and override the save method')

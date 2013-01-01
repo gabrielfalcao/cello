@@ -8,6 +8,14 @@ from .helpers import Route, InvalidURLMapping
 from .storage import Case
 
 
+class InvalidStateURLError(Exception):
+    pass
+
+
+class InvalidStateError(Exception):
+    pass
+
+
 class BadTuneReturnValue(Exception):
     pass
 
@@ -45,10 +53,10 @@ class Query(object):
 class DOMWrapper(object):
     def __init__(self, dom):
         self.dom = dom
-        self.__query = Query(dom)
+        self._query = Query(dom)
 
     def query(self, selector):
-        return self.__query.query(selector)
+        return self._query.query(selector)
 
     @classmethod
     def from_response(cls, response):
@@ -82,6 +90,10 @@ class Stage(object):
                 raise
             result = urlsplit(self.parent.response.url)
             return '{}://{}{}'.format(result.scheme, result.netloc, self._url)
+
+        except TypeError:
+            raise InvalidStateURLError(
+                'No URL was given to the stage %s' % self.__class__.__name__)
 
     def fetch(self):
         if not self._url:
@@ -140,5 +152,10 @@ class Stage(object):
 
     @classmethod
     def visit(Stage, browser):
-        stage = Stage(browser)
-        stage.proceed_to_next(Stage.url)
+        name = Stage.__name__
+        try:
+            stage = Stage(browser).proceed_to_next(Stage.url)
+        except InvalidStateURLError:
+            raise InvalidStateError(
+                'Trying to download content for %s but it has no URL' % name)
+        stage.persist(stage.tune())
