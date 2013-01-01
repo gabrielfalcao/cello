@@ -1,10 +1,10 @@
 all: unit
 
 unit:
-	@nosetests --verbosity=2 -s tests/unit/
+	@nosetests --with-coverage --cover-package=cello --verbosity=2 -s tests/unit/
 
 functional:
-	@nosetests --verbosity=2 -s tests/functional/
+	@nosetests --with-coverage --cover-package=cello --verbosity=2 -s tests/functional/
 
 integration:
 	@nosetests --verbosity=2 -s tests/integration/
