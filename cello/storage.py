@@ -21,3 +21,8 @@ class Case(object):
         raise NotImplementedError(
             'you have to inherit cello.storage.Case '
             'and override the save method')
+
+
+class DummyCase(Case):
+    def save(self, data):
+        pass
