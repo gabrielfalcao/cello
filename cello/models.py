@@ -5,7 +5,7 @@ from urlparse import urlsplit
 from lxml import html as lhtml
 
 from .helpers import Route, InvalidURLMapping
-from .storage import Case, DummyCase
+from .storage import DummyCase
 
 
 class InvalidStateURLError(Exception):
@@ -17,6 +17,10 @@ class InvalidStateError(Exception):
 
 
 class BadTuneReturnValue(Exception):
+    pass
+
+
+class CelloStopScraping(StopIteration):
     pass
 
 
@@ -168,7 +172,7 @@ class Stage(object):
         return storage.save(final)
 
     @classmethod
-    def visit(Stage, browser):
+    def _start(Stage, browser):
         name = Stage.__name__
         try:
             stage = Stage(browser, Stage.url)
@@ -177,3 +181,10 @@ class Stage(object):
             raise InvalidStateError(
                 'Trying to download content for %s but it has no URL' % name)
         stage.persist(stage.tune())
+
+    @classmethod
+    def visit(Stage, browser):
+        try:
+            return Stage._start(browser)
+        except CelloStopScraping as e:
+            return e

@@ -8,6 +8,7 @@ from sure import expect
 from cello.models import Stage
 from cello.models import InvalidStateError
 from cello.models import DOMWrapper
+from cello.models import CelloStopScraping
 from cello.storage import Case
 from cello.helpers import Route
 from cello.helpers import InvalidURLMapping
@@ -126,12 +127,13 @@ def test_stage_with_next_stage():
                 'response_url': 'http://request.two/product.php?id=123',
                 'whatever': 123,
             })
+            raise CelloStopScraping
 
     class LastStage(Stage):
         case = TestCase
 
         def play(self):
-            self.scrape(['/product.php?id=123'])
+            self.scrape(['/product.php?id=123', '/product.php?id=999'])
 
         def tune(self):
             return {
