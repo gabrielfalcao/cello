@@ -1,6 +1,6 @@
 <div style="float:left">
 
-```perl
+```shell
                    ,,    ,,
                  `7MM  `7MM
                    MM    MM
@@ -13,10 +13,8 @@ YM.    , YM.    ,  MM    MM YA.   ,A9
 ![https://raw.github.com/gabrielfalcao/cello/master/icon.png?login=gabrielfalcao&token=837b128ca9c4b1f3cb8e57457238ce38](https://raw.github.com/gabrielfalcao/cello/master/icon.png?login=gabrielfalcao&token=837b128ca9c4b1f3cb8e57457238ce38)
 
 
-Integration tests come from free:
+# Instalation
 
-
-Implement a Case that calls assert in the save method and then exits
-The processing of that Stage.
-
-raise CelloStopScraping
+```shell
+pip install -i "http://localshop.staging.yipit.com/simple/" cello
+```
