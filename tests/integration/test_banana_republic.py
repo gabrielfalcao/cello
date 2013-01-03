@@ -3,16 +3,21 @@
 import re
 import os
 
-from sure import expect
-from cello import Stage, Route, Case
+from cello import Stage, Route, Case, CelloStopScraping
 from sleepyhollow import SleepyHollow
 
 
 class SayResultsCase(Case):
     def save(self, data):
-        os.system('say %s' % data['name'])
-        os.system('open %s' % data['url'])
-        raise ValueError('awesome')
+        if not 'name' in data:
+            return
+
+        os.system("say '{name} of color {color_name}'".format(**data))
+        os.system("say 'its full price is {full_price} but its sale price is {sale_price}'".format(**data))
+        os.system("say 'opening {color_name} image so you can check it out'".format(**data))
+        os.system('open %s' % data['image'])
+        os.system('open %s' % data['color_name'])
+        raise CelloStopScraping
 
 
 class BananaRepublicProductRoute(Route):
@@ -20,22 +25,65 @@ class BananaRepublicProductRoute(Route):
     url_regex = re.compile(r'[A-Z](?P<product_id>\d+)\.jsp')
 
 
-class EachProductBananaRepublic(Stage):
+class EachSKUBananaRepublic(Stage):
     route = BananaRepublicProductRoute
     case = SayResultsCase
 
     def play(self):
-        selector = r'a.productItemName'
-        links = self.dom.query(selector).attr('href').raw()
-        self.scrape(links)
+        skus = self.browser.evaluate_javascript('''(function(){
+            var elements = document.querySelectorAll("#colorSwatchContent input[type=image]");
+            var ret = [];
+            for (var i in elements) {
+                var data = {};
+                var e = elements[i];
 
-    def tune(self):
+                if (!e.nodeName){
+                    continue;
+                }
+
+                var focus = document.createEvent("HTMLEvents");
+                focus.initEvent("dataavailable", true, true);
+                focus.eventName = "focus";
+                var mouseover = document.createEvent("HTMLEvents");
+                mouseover.initEvent("dataavailable", true, true);
+                mouseover.eventName = "mouseover";
+
+                e.click();
+                e.onfocus(focus);
+                e.onmouseover(mouseover);
+                data["image"] = document.querySelector("#product_image").getAttribute("src");
+
+                data["color_url"] = e.getAttribute("src");
+                data["color_name"] = document.querySelector("div.swatchLabelName").innerText;
+
+                data["full_price"] = document.querySelector("#priceText strike").innerHTML;
+                data["sale_price"] = document.querySelector("#priceText span.salePrice").innerHTML;
+
+                ret.push(data);
+            }
+            return ret;
+        })();''')
         data = {
-            'image': self.dom.query('#product_image').attr('src').raw(),
             'name': self.dom.query('#productNameText .productName').text(),
         }
-        assert data['image'].lower().endswith('jpg')
-        return data
+        if not isinstance(skus, list):
+            raise TypeError("SKUS are %r" % skus)
+
+        for sku in skus:
+            full_data = data.copy()
+            sku['color_name'] = sku['color_name'].lower().replace("color:", "").strip()
+            full_data.update(sku)
+            self.persist(full_data)
+
+
+class EachProductBananaRepublic(Stage):
+    route = BananaRepublicProductRoute
+    next_stage = EachSKUBananaRepublic
+
+    def play(self):
+        selector = r'a.productItemName'
+        links = self.dom.query(selector).attr('href').raw()
+        self.scrape(reversed(links))
 
 
 class EachCategoryBananaRepublic(Stage):
@@ -55,5 +103,4 @@ class BananaRepublic(Stage):
 
 def test_scraping():
     "Scraping from banana republic"
-    expect(BananaRepublic.visit).when.called_with(
-        SleepyHollow()).to.throw('awesome')
+    BananaRepublic.visit(SleepyHollow())
