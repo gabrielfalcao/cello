@@ -67,7 +67,7 @@ class EachSKUBananaRepublic(Stage):
             'name': self.dom.query('#productNameText .productName').text(),
         }
         if not isinstance(skus, list):
-            raise TypeError("SKUS are %r" % skus)
+            return
 
         for sku in skus:
             full_data = data.copy()
