@@ -134,13 +134,14 @@ class Fab(Stage):
 
 ## 2. Persisting data
 
-At this point you have all the scraper system set up, but where will
-it be stored?
+At this point you have all components of the scraper system set up,
+but where will it be stored?
 
 Cello has a concept of `Case`. Imagine you finish playing a Cello, you
 must store it in its case.
 
-### An hypothetical Django-based case
+### A hypothetical Django-based case
+
 ```python
 from cello import Case
 
@@ -170,7 +171,7 @@ class FilesystemCase(Case):
 
 ## 3. Running a scraper with SleepyHollow
 
-Cello is not only 100% decoupled from Django but is also loosely
+Cello is not only 100% decoupled from Django, but it's also loosely
 coupled with SleepyHollow.
 
 To run a scraper, call the method `.visit()` First stage passing an
