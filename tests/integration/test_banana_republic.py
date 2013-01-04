@@ -2,9 +2,17 @@
 # -*- coding: utf-8 -*-
 import re
 import os
+import logging
 
-from cello import Stage, Route, Case, CelloStopScraping
+from cello import (
+    Stage,
+    Route,
+    Case,
+    CelloStopScraping,
+)
 from sleepyhollow import SleepyHollow
+
+from helpers import BANANA_REPUBLIC_SKU_SCRIPT, logger
 
 
 class SayResultsCase(Case):
@@ -16,7 +24,7 @@ class SayResultsCase(Case):
         os.system("say 'its full price is {full_price} but its sale price is {sale_price}'".format(**data))
         os.system("say 'opening {color_name} image so you can check it out'".format(**data))
         os.system('open %s' % data['image'])
-        os.system('open %s' % data['color_name'])
+        os.system('open %s' % data['color_url'])
         raise CelloStopScraping
 
 
@@ -30,50 +38,46 @@ class EachSKUBananaRepublic(Stage):
     case = SayResultsCase
 
     def play(self):
-        skus = self.browser.evaluate_javascript('''(function(){
-            var elements = document.querySelectorAll("#colorSwatchContent input[type=image]");
-            var ret = [];
-            for (var i in elements) {
-                var data = {};
-                var e = elements[i];
+        self.fetch()
+        product_name = self.dom.query('#productNameText .productName').text()
 
-                if (!e.nodeName){
-                    continue;
-                }
+        try:
+            skus = []
+            for x in range(10):
+                if (len(skus) is 0) or (not isinstance(skus, list)):
+                    self.fetch()
+                    skus = self.browser.evaluate_javascript(BANANA_REPUBLIC_SKU_SCRIPT)
 
-                var focus = document.createEvent("HTMLEvents");
-                focus.initEvent("dataavailable", true, true);
-                focus.eventName = "focus";
-                var mouseover = document.createEvent("HTMLEvents");
-                mouseover.initEvent("dataavailable", true, true);
-                mouseover.eventName = "mouseover";
+        except Exception:
+            logger.exception(
+                "Could not evaluate javascript for %s (%s)",
+                product_name, self.response.url)
+            return
 
-                e.click();
-                e.onfocus(focus);
-                e.onmouseover(mouseover);
-                data["image"] = document.querySelector("#product_image").getAttribute("src");
+        if len(skus) is 0:
+            msg = "%s out of stock: %s" % (self.url, self.response.url)
+            logging.info(msg)
+            return
 
-                data["color_url"] = e.getAttribute("src");
-                data["color_name"] = document.querySelector("div.swatchLabelName").innerText;
-
-                data["full_price"] = document.querySelector("#priceText strike").innerHTML;
-                data["sale_price"] = document.querySelector("#priceText span.salePrice").innerHTML;
-
-                ret.push(data);
-            }
-            return ret;
-        })();''')
-        data = {
-            'name': self.dom.query('#productNameText .productName').text(),
-        }
         if not isinstance(skus, list):
+            msg = "Skipping {} due a bad JSON return value: {}".format(product_name, repr(skus))
+            logger.error(msg)
             return
 
         for sku in skus:
-            full_data = data.copy()
-            sku['color_name'] = sku['color_name'].lower().replace("color:", "").strip()
-            full_data.update(sku)
+            sku['product_name'] = product_name
+            full_data = self.prepare_sku(sku)
             self.persist(full_data)
+
+    def prepare_sku(self, sku=None):
+        data = self.tune()
+        if not sku:
+            return data
+        data['brand'] = 'Banana Republic'
+        sku['color_name'] = sku['color_name'].lower().replace("color:", "").strip()
+        data.update(sku)
+        data['filename'] = re.sub(r'\W+', '_', "sku {brand} {product_name} {color_name}".format(**data)) + '.json'
+        return data
 
 
 class EachProductBananaRepublic(Stage):
@@ -83,16 +87,15 @@ class EachProductBananaRepublic(Stage):
     def play(self):
         selector = r'a.productItemName'
         links = self.dom.query(selector).attr('href').raw()
-        self.scrape(reversed(links))
+        self.scrape(links)
 
 
 class EachCategoryBananaRepublic(Stage):
     next_stage = EachProductBananaRepublic
 
     def play(self):
-        selector = r'ul li.idxBottomCat a'
-        sale_only = lambda link: 'sale' in link
-        links = filter(sale_only, self.dom.query(selector).attr('href').raw())
+        selector = r'ul li.idxBottomCat a[href*=sale]'
+        links = self.dom.query(selector).attr('href').raw()
         self.scrape(links)
 
 
