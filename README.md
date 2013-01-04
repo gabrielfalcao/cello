@@ -32,16 +32,16 @@ make integration
 
 # Tutorial
 
-Let's write our first scraper, to Fab.com
+Let's write our first scraper using Fab.com as an example.
 
-Each part of this tutorial show an example code, the latest example is
+Each part of this tutorial shows an example code, the latest example is
 always a working code, and because of that there is a lot of repeated
 code.
 
 ## 1. Create stages
 
 Create a python file called `fab_scraper.py` with the following
-contents.
+contents:
 
 ```python
 from cello import Stage
@@ -243,7 +243,5 @@ Fab.visit(Browser())
 ````
 
 # See it working
-
-<object type="application/x-shockwave-flash" name="anonymous_element_6" data="https://www.dropbox.com/static/swf/jwplayer-5.10-licensed-2393.swf" width="828" height="480" id="anonymous_element_6" style="visibility: visible;"><param name="allowfullscreen" value="true"><param name="allowScriptAccess" value="always"><param name="wmode" value="opaque"><param name="bgcolor" value="#000000"><param name="flashvars" value="file=https://showbox-tr.dropbox.com/get_transcoded/t/icfbx9eft97h8co/Cello.mov%3Fsecure_hash%3D&amp;skin=/static/swf/bekle.swf&amp;controlbar=over&amp;autostart=true&amp;type=video"></object>
 
 You can download it here [https://www.dropbox.com/s/icfbx9eft97h8co/Cello.mov](https://www.dropbox.com/s/icfbx9eft97h8co/Cello.mov)
