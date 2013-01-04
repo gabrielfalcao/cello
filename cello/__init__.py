@@ -5,6 +5,7 @@ from .models import Stage
 from .models import InvalidStateError
 from .models import DOMWrapper
 from .models import CelloStopScraping
+from .models import CelloJumpToNextStage
 
 from .helpers import Route
 from .helpers import InvalidURLMapping
@@ -19,4 +20,5 @@ __all__ = [
     'CelloStopScraping',
     'InvalidURLMapping',
     'InvalidStateError',
+    'CelloJumpToNextStage',
 ]

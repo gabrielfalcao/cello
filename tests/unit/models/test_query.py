@@ -63,6 +63,35 @@ def test_query_and_attr_with_one_object():
         'http://yipit.com')
 
 
+def test_query_attr_one_with_many_objects():
+    "Query by atributes with many and calling .one()"
+
+    dom = Mock()
+    l1 = Mock(attrib={'href': 'http://yipit.com'})
+    l2 = Mock(attrib={'href': 'http://github.com'})
+
+    dom.cssselect.return_value = [l1, l2]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').one()).to.equal(
+        'http://yipit.com')
+
+
+def test_query_attr_one_with_one_object():
+    "Query by atributes with one object"
+
+    dom = Mock()
+    link = Mock(attrib={'href': 'http://yipit.com'})
+
+    dom.cssselect.return_value = [link]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').one()).to.equal(
+        'http://yipit.com')
+
+
 # Testing .text
 
 def test_query_and_text_with_no_objects():

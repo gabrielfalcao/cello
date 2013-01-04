@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 from datetime import datetime
 from urlparse import urlsplit
 from lxml import html as lhtml
 
 from .helpers import Route, InvalidURLMapping
 from .storage import DummyCase
+
+logger = logging.getLogger('cello')
+logger.setLevel(logging.INFO)
 
 
 class InvalidStateURLError(Exception):
@@ -24,6 +28,10 @@ class CelloStopScraping(StopIteration):
     pass
 
 
+class CelloJumpToNextStage(Exception):
+    pass
+
+
 class Query(object):
     def __init__(self, dom):
         self._dom = dom
@@ -34,8 +42,8 @@ class Query(object):
         self._elements = self._dom.cssselect(selector)
         return self
 
-    def attr(self, name):
-        func = lambda i: i.attrib.get(name, self)
+    def attr(self, name=None):
+        func = lambda i: name and i.attrib.get(name, self) or dict(i.attrib)
         self._values = map(func, self._elements)
         return self
 
@@ -49,6 +57,13 @@ class Query(object):
     def raw(self):
         ret = self._values or self._elements
         return self._one_or_many(ret)
+
+    def one(self):
+        raw = self.raw()
+        if isinstance(raw, list):
+            return raw[0]
+        else:
+            return raw
 
     def _one_or_many(self, ret):
         return len(ret) is 1 and ret[-1] or ret
@@ -134,7 +149,12 @@ class Stage(object):
         if self.next_stage:
             stage = self.next_stage(self.browser, url=link, parent=self)
             stage.fetch()
-            stage.play()
+            try:
+                stage.play()
+            except CelloJumpToNextStage:
+                logger.warning("Jumping to next stage %s when calling .play()", repr(stage))
+                return stage
+
         else:
             stage = self.__class__(self.browser, url=link, parent=self.parent)
             stage.fetch()
@@ -145,7 +165,11 @@ class Stage(object):
         for link in links:
             stage = self.proceed_to_next(link)
 
-            data = stage.tune()
+            try:
+                data = stage.tune()
+            except CelloJumpToNextStage:
+                logger.warning("Jumping to next stage %s when calling .tune()", repr(stage))
+                continue
 
             if not data:
                 raise BadTuneReturnValue('Cannot persist without data')
@@ -180,7 +204,9 @@ class Stage(object):
         except InvalidStateURLError:
             raise InvalidStateError(
                 'Trying to download content for %s but it has no URL' % name)
-        stage.persist(stage.tune())
+
+        data = stage.tune()
+        stage.persist(data)
 
     @classmethod
     def visit(Stage, browser):
