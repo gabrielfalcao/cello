@@ -133,7 +133,7 @@ class Stage(object):
 
     def fetch(self):
         if not self._url:
-            raise ValueError('Want me to fetch without a url')
+            raise ValueError('Try to call {}.fetch with no url'.format(self.__class__.__name__))
 
         self.response = self.get_response(self.url)
 

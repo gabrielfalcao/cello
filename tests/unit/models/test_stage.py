@@ -111,6 +111,48 @@ def test_url_raises_if_no_parent():
     )
 
 
+def test_url_fallsback_to_parent_if_router_fails():
+    ("Stage.url will get the base url from its parent "
+     "if the router fails")
+
+    class MyRoute(Route):
+        url_mapping = 'http://foo.bar.com/{page}'
+        url_regex = re.compile(r'(?P<page>nothing hahaha).php')
+
+    class ChildrenSomeStage(Stage):
+        route = MyRoute
+
+    class SomeStage(Stage):
+        next_stage = ChildrenSomeStage
+
+    browser = Mock()
+    parent = SomeStage(browser=browser, url='http://foobar.com')
+    st = ChildrenSomeStage(browser=browser, parent=parent, url='/test/one')
+
+    expect(st.url).to.equal('http://foobar.com/test/one')
+
+
+def test_get_fallback_url_raises_if_has_no_parent():
+    ("Stage.get_fallback_url should raise InvalidURLMapping if there is no parent")
+
+    class ChildStage(Stage):
+        pass
+
+    st = ChildStage(browser=Mock(), url='/test/child/')
+
+    expect(st.get_fallback_url).when.called.to.throw(
+        InvalidURLMapping, "The stage ChildStage has no parent to grab a base url from to add to /test/child/")
+
+
+def test_fetch_called_with_no_url():
+
+    class SomeStage(Stage):
+        pass
+
+    st=SomeStage(browser=Mock())
+
+    expect(st.fetch).when.called.to.throw("Try to call SomeStage.fetch with no url")
+
 def test_stage_with_next_stage():
     "Calling .visit() on a stage with next stage will persist the last stage"
 
