@@ -9,6 +9,7 @@ from cello.models import Stage
 from cello.models import InvalidStateError
 from cello.models import DOMWrapper
 from cello.models import CelloStopScraping
+from cello.models import CelloJumpToNextStage
 from cello.storage import Case
 from cello.helpers import Route
 from cello.helpers import InvalidURLMapping
@@ -145,13 +146,16 @@ def test_get_fallback_url_raises_if_has_no_parent():
 
 
 def test_fetch_called_with_no_url():
+    ("Stage.fetch should raise ValueError if the stage has no url")
 
     class SomeStage(Stage):
         pass
 
-    st=SomeStage(browser=Mock())
+    st = SomeStage(browser=Mock())
 
-    expect(st.fetch).when.called.to.throw("Try to call SomeStage.fetch with no url")
+    expect(st.fetch).when.called.to.throw(
+        ValueError, "Try to call SomeStage.fetch with no url")
+
 
 def test_stage_with_next_stage():
     "Calling .visit() on a stage with next stage will persist the last stage"
@@ -196,3 +200,45 @@ def test_stage_with_next_stage():
         call('http://weewoo.com/product.php?id=123',
              config=dict(screenshot=True)),
     ])
+
+@patch('cello.models.logger')
+def test_proceed_to_next_logs_when_play_raises_error(logger):
+    ("Stage.proceed_to_next logs a warning and returns stage directly when play throws CelloJumpToNextStage")
+
+    class SecondStage(Stage):
+        def play(self):
+            raise CelloJumpToNextStage('next')
+
+    class FirstStage(Stage):
+        next_stage = SecondStage
+
+    browser = Mock()
+
+    st = FirstStage(browser)
+    second_stage = st.proceed_to_next('http://foobar.com')
+
+    logger.warning.assert_called_once_with(
+        'Jumping to next stage %s when calling .play() for url %s',
+        repr(second_stage),
+        'http://foobar.com',
+    )
+
+
+@patch('cello.models.logger')
+def test_scrape_logs_when_tune_raises_error(logger):
+    ("Stage.scrape logs a warning when tune throws CelloJumpToNextStage")
+
+    class FirstStage(Stage):
+        def tune(self):
+            raise CelloJumpToNextStage('wow')
+
+    browser = Mock()
+
+    st = FirstStage(browser)
+    st.scrape(['http://google.com'])
+
+    logger.warning.assert_called_once_with(
+        "Jumping to next stage %s when calling .tune() for url %s",
+        'FirstStage',
+        'http://google.com',
+    )

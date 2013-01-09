@@ -92,13 +92,14 @@ class Stage(object):
         self._url = url
         self.response = response
         self.parent = parent
+        self.name = self.__class__.__name__
 
     @property
     def dom(self):
         if self.response is None:
             raise InvalidStateError(
                 "The stage %s hasn't been fetched yet, "
-                "and so its DOM can't be queryed" % self.__class__.__name__
+                "and so its DOM can't be queryed" % self.name
             )
 
         return DOMWrapper.from_response(self.response)
@@ -115,7 +116,7 @@ class Stage(object):
 
         except TypeError:
             raise InvalidStateURLError(
-                'No URL was given to the stage %s' % self.__class__.__name__)
+                'No URL was given to the stage %s' % self.name)
         else:
             if not (url.startswith('http://') or url.startswith('https://')):
                 return self.get_fallback_url()
@@ -126,14 +127,14 @@ class Stage(object):
         if not self.parent:
             raise InvalidURLMapping(
                 ('The stage %s has no parent to grab a base '
-                'url from to add to %s') % (self.__class__.__name__, self._url))
+                'url from to add to %s') % (self.name, self._url))
 
         result = urlsplit(self.parent.url)
         return '{}://{}{}'.format(result.scheme, result.netloc, self._url)
 
     def fetch(self):
         if not self._url:
-            raise ValueError('Try to call {}.fetch with no url'.format(self.__class__.__name__))
+            raise ValueError('Try to call {}.fetch with no url'.format(self.name))
 
         self.response = self.get_response(self.url)
 
@@ -152,7 +153,7 @@ class Stage(object):
             try:
                 stage.play()
             except CelloJumpToNextStage:
-                logger.warning("Jumping to next stage %s when calling .play()", repr(stage))
+                logger.warning("Jumping to next stage %s when calling .play() for url %s", repr(stage), link)
                 return stage
 
         else:
@@ -168,7 +169,7 @@ class Stage(object):
             try:
                 data = stage.tune()
             except CelloJumpToNextStage:
-                logger.warning("Jumping to next stage %s when calling .tune()", repr(stage))
+                logger.warning("Jumping to next stage %s when calling .tune() for url %s", stage.name, link)
                 continue
 
             if not data:
@@ -182,7 +183,7 @@ class Stage(object):
     def tune(self):
         return {
             'datetime': datetime.now().isoformat(),
-            'stage': self.__class__.__name__,
+            'stage': self.name,
         }
 
     def persist(self, data):
