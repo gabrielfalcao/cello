@@ -80,8 +80,7 @@ def test_dom_raises_exception_if_response_is_none():
 
     expect(get_dom).when.called.to.throw(
         InvalidStateError,
-        "The stage BoomStage hasn't been fetched yet, "
-        "and so its DOM can't be queryed"
+        ("The stage tests.unit.models.test_stage.BoomStage hasn't been fetched yet, and so its DOM can't be queryed")
     )
 
 
@@ -143,7 +142,7 @@ def test_get_fallback_url_raises_if_has_no_parent():
     st = ChildStage(browser=Mock(), url='/test/child/')
 
     expect(st.get_fallback_url).when.called.to.throw(
-        InvalidURLMapping, "The stage ChildStage has no parent to grab a base url from to add to /test/child/")
+        InvalidURLMapping, "The stage tests.unit.models.test_stage.ChildStage has no parent to grab a base url from to add to /test/child/")
 
 
 def test_fetch_called_with_no_url():
@@ -155,7 +154,7 @@ def test_fetch_called_with_no_url():
     st = SomeStage(browser=Mock())
 
     expect(st.fetch).when.called.to.throw(
-        ValueError, "Try to call SomeStage.fetch with no url")
+        ValueError, "Try to call tests.unit.models.test_stage.SomeStage.fetch with no url")
 
 
 def test_stage_with_next_stage():
@@ -241,7 +240,7 @@ def test_scrape_logs_when_tune_raises_error(logger):
 
     logger.warning.assert_called_once_with(
         "Jumping to next stage %s when calling .tune() for url %s",
-        'FirstStage',
+        'tests.unit.models.test_stage.FirstStage',
         'http://google.com',
     )
 
@@ -260,7 +259,7 @@ def test_scrape_raises_if_tune_returns_empty_results():
     expect(st.scrape).when.called_with(['http://foobar.com']).to.throw(
         BadTuneReturnValue,
         ('Could not persist while scraping the url "http://foobar.com" '
-         'through MessedUpTuneStage because the tune() method returned '
+         'through tests.unit.models.test_stage.MessedUpTuneStage because the tune() method returned '
          'an empty value: None')
     )
 
@@ -291,5 +290,5 @@ def test_tune_calls_fetch_by_default(datetime):
 
     expect(data).to.equal({
         'datetime': '[iso date]',
-        'stage': 'TuneStage',
+        'stage': 'tests.unit.models.test_stage.TuneStage',
     })

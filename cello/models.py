@@ -94,7 +94,7 @@ class Stage(object):
         self._url = url
         self.response = response
         self.parent = parent
-        self.name = self.__class__.__name__
+        self.name = '.'.join([self.__class__.__module__, self.__class__.__name__])
 
     @property
     def dom(self):

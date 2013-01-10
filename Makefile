@@ -5,10 +5,10 @@ prepare:
 	@find . -name '*.pyc' -delete
 
 unit: prepare
-	@nosetests --with-coverage --cover-package=cello --verbosity=2 -s tests/unit/
+	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/unit/
 
 functional: prepare
-	@nosetests --with-coverage --cover-package=cello --verbosity=2 -s tests/functional/
+	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/functional/
 
 integration: prepare
 	@nosetests --verbosity=2 -s tests/integration/
