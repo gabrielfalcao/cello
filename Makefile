@@ -1,14 +1,26 @@
-all: unit
+all: install_deps test
 
-prepare:
-	@rm -f .coverage
-	@find . -name '*.pyc' -delete
+filename=cello-`python -c 'import cello;print cello.version'`.tar.gz
 
-unit: prepare
-	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/unit/
+export PYTHONPATH:=  ${PWD}
+export CELLO_NO_COLORS:=  true
 
-functional: prepare
-	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/functional/
+install_deps:
+	@pip install -r requirements.pip
 
-integration: prepare
-	@nosetests --verbosity=2 -s tests/integration/
+test:
+	@nosetests -s --verbosity=2 tests
+	@steadymark README.md
+
+clean:
+	@printf "Cleaning up files that are already in .gitignore... "
+	@for pattern in `cat .gitignore`; do rm -rf $$pattern; find . -name "$$pattern" -exec rm -rf {} \;; done
+	@echo "OK!"
+
+release: clean test publish
+	@printf "Exporting to $(filename)... "
+	@tar czf $(filename) cello setup.py README.md
+	@echo "DONE!"
+
+publish:
+	@python setup.py sdist register upload
