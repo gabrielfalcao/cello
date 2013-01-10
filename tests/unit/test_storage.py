@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from cello import Case, Stage
+from cello.models import Stage
+from cello.storage import Case, DummyCase
 from sure import expect
 
 
@@ -29,3 +30,15 @@ def test_it_requires_an_implementation():
         NotImplementedError,
         'you have to inherit cello.storage.Case '
         'and override the save method')
+
+
+def test_dummy_case_doesnt_do_anything():
+    "The DummyCase by default doesnt do anything"
+
+    class MyStage(Stage):
+        url = 'http://github.com'
+
+    stage = MyStage(None)
+    case = DummyCase(stage)
+
+    expect(case.save('foo')).to.be.none

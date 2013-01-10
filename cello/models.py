@@ -21,7 +21,9 @@ class InvalidStateError(Exception):
 
 
 class BadTuneReturnValue(Exception):
-    pass
+    msg = ('Could not persist while scraping the url "{url}" '
+           'through {name} because the tune() method returned '
+           'an empty value: {value}')
 
 
 class CelloStopScraping(StopIteration):
@@ -173,7 +175,13 @@ class Stage(object):
                 continue
 
             if not data:
-                raise BadTuneReturnValue('Cannot persist without data')
+                raise BadTuneReturnValue(
+                    BadTuneReturnValue.msg.format(
+                        name=self.name,
+                        url=stage.url,
+                        value=repr(data),
+                    )
+                )
 
             stage.persist(data)
 

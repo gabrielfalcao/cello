@@ -10,6 +10,7 @@ from cello.models import InvalidStateError
 from cello.models import DOMWrapper
 from cello.models import CelloStopScraping
 from cello.models import CelloJumpToNextStage
+from cello.models import BadTuneReturnValue
 from cello.storage import Case
 from cello.helpers import Route
 from cello.helpers import InvalidURLMapping
@@ -201,6 +202,7 @@ def test_stage_with_next_stage():
              config=dict(screenshot=True)),
     ])
 
+
 @patch('cello.models.logger')
 def test_proceed_to_next_logs_when_play_raises_error(logger):
     ("Stage.proceed_to_next logs a warning and returns stage directly when play throws CelloJumpToNextStage")
@@ -242,3 +244,52 @@ def test_scrape_logs_when_tune_raises_error(logger):
         'FirstStage',
         'http://google.com',
     )
+
+
+def test_scrape_raises_if_tune_returns_empty_results():
+    ("Stage.scrape raises BadTuneReturnValue if tune returns a falsy value")
+
+    class MessedUpTuneStage(Stage):
+        def tune(self):
+            return None
+
+    browser = Mock()
+
+    st = MessedUpTuneStage(browser)
+
+    expect(st.scrape).when.called_with(['http://foobar.com']).to.throw(
+        BadTuneReturnValue,
+        ('Could not persist while scraping the url "http://foobar.com" '
+         'through MessedUpTuneStage because the tune() method returned '
+         'an empty value: None')
+    )
+
+
+def test_play_calls_fetch_by_default():
+    ("Stage.play() by default just calls fetch()")
+
+    class PlayStage(Stage):
+        fetch = Mock()
+
+    st = PlayStage(Mock())
+    st.play()
+
+    PlayStage.fetch.assert_called_once_with()
+
+
+@patch('cello.models.datetime')
+def test_tune_calls_fetch_by_default(datetime):
+    ("Stage.tune() by default returns datetime and stage name")
+
+    datetime.now.return_value.isoformat.return_value = '[iso date]'
+
+    class TuneStage(Stage):
+        pass
+
+    st = TuneStage(Mock())
+    data = st.tune()
+
+    expect(data).to.equal({
+        'datetime': '[iso date]',
+        'stage': 'TuneStage',
+    })
