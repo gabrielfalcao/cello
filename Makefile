@@ -4,6 +4,7 @@ filename=cello-`python -c 'import cello;print cello.version'`.tar.gz
 
 export PYTHONPATH:=  ${PWD}
 export CELLO_NO_COLORS:=  true
+localshop="http://localshop.staging.yipit.com:8900/"
 
 install_deps:
 	@pip install -r requirements.pip
@@ -23,4 +24,5 @@ release: clean test publish
 	@echo "DONE!"
 
 publish:
-	@python setup.py sdist register upload
+	@python setup.py register -r localshop
+	@python setup.py sdist upload -r localshop
