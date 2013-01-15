@@ -11,6 +11,8 @@ from .storage import DummyCase
 logger = logging.getLogger('cello')
 logger.setLevel(logging.INFO)
 
+DEBUG = True
+
 
 class InvalidStateURLError(Exception):
     pass
@@ -34,7 +36,7 @@ class CelloJumpToNextStage(Exception):
     pass
 
 
-class Query(object):
+class Query(str):
     def __init__(self, dom):
         self._dom = dom
         self._elements = []
@@ -63,7 +65,7 @@ class Query(object):
     def one(self):
         raw = self.raw()
         if isinstance(raw, list):
-            return raw[0]
+            return raw and raw[0] or self
         else:
             return raw
 
@@ -95,6 +97,7 @@ class Stage(object):
         self.response = response
         self.parent = parent
         self.name = '.'.join([self.__class__.__module__, self.__class__.__name__])
+        self.debug = DEBUG
 
     @property
     def dom(self):
@@ -145,7 +148,7 @@ class Stage(object):
     def get_response(self, url):
         return self.browser.get(
             self.url,
-            config=dict(screenshot=True),
+            config=dict(screenshot=self.debug),
         )
 
     def proceed_to_next(self, link):

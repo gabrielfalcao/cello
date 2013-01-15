@@ -5,6 +5,7 @@ from mock import Mock
 from mock import call
 from mock import patch
 from sure import expect
+from cello import models
 from cello.models import Stage
 from cello.models import InvalidStateError
 from cello.models import DOMWrapper
@@ -14,6 +15,8 @@ from cello.models import BadTuneReturnValue
 from cello.storage import Case
 from cello.helpers import Route
 from cello.helpers import InvalidURLMapping
+
+models.DEBUG = True
 
 
 def test_first_stage_requires_a_url():
