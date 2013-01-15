@@ -2,16 +2,22 @@ all: install_deps test
 
 filename=cello-`python -c 'import cello;print cello.version'`.tar.gz
 
-export PYTHONPATH:=  ${PWD}
 export CELLO_NO_COLORS:=  true
 localshop="http://localshop.staging.yipit.com:8900/"
 
 install_deps:
 	@pip install -r requirements.pip
 
-test:
-	@nosetests -s --verbosity=2 tests
+unit:
+	@nosetests -s --verbosity=2 tests/unit
+
+integration:
+	@nosetests -s --verbosity=2 tests/integration
+
+docs:
 	@steadymark README.md
+
+test: unit integration docs
 
 clean:
 	@printf "Cleaning up files that are already in .gitignore... "
