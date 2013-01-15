@@ -21,25 +21,28 @@ BANANA_REPUBLIC_SKU_SCRIPT = '''(function(){
             continue;
         }
 
-        var focus = document.createEvent("HTMLEvents");
-        focus.initEvent("dataavailable", true, true);
-        focus.eventName = "focus";
-        var mouseover = document.createEvent("HTMLEvents");
-        mouseover.initEvent("dataavailable", true, true);
-        mouseover.eventName = "mouseover";
+        try {
+            var focus = document.createEvent("HTMLEvents");
+            focus.initEvent("dataavailable", true, true);
+            focus.eventName = "focus";
+            var mouseover = document.createEvent("HTMLEvents");
+            mouseover.initEvent("dataavailable", true, true);
+            mouseover.eventName = "mouseover";
 
-        e.click();
-        e.onfocus(focus);
-        e.onmouseover(mouseover);
-        data["image"] = document.querySelector("#product_image").getAttribute("src");
+            e.click();
+            e.onfocus(focus);
+            e.onmouseover(mouseover);
+            data["image"] = document.querySelector("#product_image").getAttribute("src");
 
-        data["color_url"] = e.getAttribute("src");
-        data["color_name"] = document.querySelector("div.swatchLabelName").innerText;
+            data["color_url"] = e.getAttribute("src");
+            data["color_name"] = document.querySelector("div.swatchLabelName").innerText;
 
-        data["full_price"] = document.querySelector("#priceText strike").innerHTML;
-        data["sale_price"] = document.querySelector("#priceText span.salePrice").innerHTML;
-
-        ret.push(data);
+            data["full_price"] = document.querySelector("#priceText strike").innerHTML;
+            data["sale_price"] = document.querySelector("#priceText span.salePrice").innerHTML;
+            ret.push(data);
+        } catch (e){
+            continue;
+        }
     }
     return ret;
 })();'''
