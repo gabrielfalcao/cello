@@ -17,10 +17,10 @@ from helpers import BANANA_REPUBLIC_SKU_SCRIPT, logger
 
 class SayResultsCase(Case):
     def save(self, data):
-        if not 'name' in data:
-            return
+        if not 'product_name' in data:
+            raise CelloStopScraping
 
-        os.system("say '{name} of color {color_name}'".format(**data))
+        os.system("say '{product_name} of color {color_name}'".format(**data))
         os.system("say 'its full price is {full_price} but its sale price is {sale_price}'".format(**data))
         os.system("say 'opening {color_name} image so you can check it out'".format(**data))
         os.system('open %s' % data['image'])
@@ -42,12 +42,7 @@ class EachSKUBananaRepublic(Stage):
         product_name = self.dom.query('#productNameText .productName').text()
 
         try:
-            skus = []
-            for x in range(10):
-                if (len(skus) is 0) or (not isinstance(skus, list)):
-                    self.fetch()
-                    skus = self.browser.evaluate_javascript(BANANA_REPUBLIC_SKU_SCRIPT)
-
+            skus = self.browser.evaluate_javascript(BANANA_REPUBLIC_SKU_SCRIPT)
         except Exception:
             logger.exception(
                 "Could not evaluate javascript for %s (%s)",
@@ -60,7 +55,7 @@ class EachSKUBananaRepublic(Stage):
             return
 
         if not isinstance(skus, list):
-            msg = "Skipping {} due a bad JSON return value: {}".format(product_name, repr(skus))
+            msg = "Skipping {} due a bad JSON return value: {}".format(repr(product_name), repr(skus))
             logger.error(msg)
             return
 
@@ -76,7 +71,7 @@ class EachSKUBananaRepublic(Stage):
         data['brand'] = 'Banana Republic'
         sku['color_name'] = sku['color_name'].lower().replace("color:", "").strip()
         data.update(sku)
-        data['filename'] = re.sub(r'\W+', '_', "sku {brand} {product_name} {color_name}".format(**data)) + '.json'
+        data['filename'] = re.sub(r'\W+', '_', "sku {brand} {product_name} {color_name}".decode('utf-8').format(**data)) + u'.json'
         return data
 
 
