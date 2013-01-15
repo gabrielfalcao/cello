@@ -57,4 +57,7 @@ class Fab(Stage):
     url = 'http://fab.com'
     next_stage = EachFabBrand
 
-Fab.visit(SleepyHollow())
+
+def test_scraping():
+    "Scraping from FAB"
+    Fab.visit(SleepyHollow())
