@@ -92,6 +92,17 @@ def test_query_attr_one_with_one_object():
         'http://yipit.com')
 
 
+def test_query_attr_one_with_no_objects():
+    "Query by atributes with no objects"
+
+    dom = Mock()
+    dom.cssselect.return_value = []
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').one()).to.equal('')
+
+
 # Testing .text
 
 def test_query_and_text_with_no_objects():

@@ -65,7 +65,7 @@ class Query(str):
     def one(self):
         raw = self.raw()
         if isinstance(raw, list):
-            return raw and raw[0] or self
+            return raw and raw[0] or ''
         else:
             return raw
 
