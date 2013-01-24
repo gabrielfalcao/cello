@@ -9,6 +9,7 @@ from cello import (
     Route,
     Case,
     CelloJumpToNextStage,
+    CelloStopScraping
 )
 from sleepyhollow import SleepyHollow
 
@@ -25,6 +26,7 @@ class SayResultsCase(Case):
         self.speak("say 'opening {color_name} image so you can check it out'", data)
         self.speak('open "{image}"', data)
         self.speak('open "{color_url}"', data)
+        raise CelloStopScraping
 
     def speak(self, phrase, data):
         if isinstance(phrase, str):
