@@ -8,7 +8,7 @@ from cello import (
     Stage,
     Route,
     Case,
-    CelloStopScraping,
+    CelloJumpToNextStage,
 )
 from sleepyhollow import SleepyHollow
 
@@ -18,14 +18,19 @@ from helpers import BANANA_REPUBLIC_SKU_SCRIPT, logger
 class SayResultsCase(Case):
     def save(self, data):
         if not 'product_name' in data:
-            raise CelloStopScraping
+            raise CelloJumpToNextStage
 
-        os.system("say '{product_name} of color {color_name}'".format(**data))
-        os.system("say 'its full price is {full_price} but its sale price is {sale_price}'".format(**data))
-        os.system("say 'opening {color_name} image so you can check it out'".format(**data))
-        os.system('open %s' % data['image'])
-        os.system('open %s' % data['color_url'])
-        raise CelloStopScraping
+        self.speak("say '{product_name} of color {color_name}'", data)
+        self.speak("say 'its full price is {full_price} but its sale price is {sale_price}'", data)
+        self.speak("say 'opening {color_name} image so you can check it out'", data)
+        self.speak('open "{image}"', data)
+        self.speak('open "{color_url}"', data)
+
+    def speak(self, phrase, data):
+        if isinstance(phrase, str):
+            phrase = phrase.decode('utf-8')
+
+        os.system(phrase.format(**data))
 
 
 class BananaRepublicProductRoute(Route):
@@ -43,6 +48,7 @@ class EachSKUBananaRepublic(Stage):
 
         try:
             skus = self.browser.evaluate_javascript(BANANA_REPUBLIC_SKU_SCRIPT)
+            print "SKUS", skus, "SKUS"
         except Exception:
             logger.exception(
                 "Could not evaluate javascript for %s (%s)",
