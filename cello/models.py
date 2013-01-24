@@ -41,8 +41,16 @@ class Query(str):
         self._dom = dom
         self._elements = []
         self._values = []
+        self._last_query = "[Nothing queried so far]"
+
+    def __repr__(self):
+        total = len(self._elements)
+        word = total == 1 and "element" or "elements"
+        return u'<Query: "{}" with {} {}>'.format(self._last_query, total, word)
 
     def query(self, selector):
+        selector = unicode(selector)
+        self._last_query = selector
         self._elements = self._dom.cssselect(selector)
         return self
 
@@ -56,18 +64,28 @@ class Query(str):
                                      self._elements) or '')
 
     def html(self):
-        return lhtml.tostring(self._elements)
+        return self._one_or_many(map(lhtml.tostring,
+                                     self._elements) or '')
 
     def raw(self):
         ret = self._values or self._elements
         return self._one_or_many(ret)
 
-    def one(self):
+    def one(self, index=0):
         raw = self.raw()
         if isinstance(raw, list):
-            return raw and raw[0] or ''
+            if len(raw) == 0:
+                return ''
+            else:
+                return raw[index]
         else:
             return raw
+
+    def first(self):
+        return self.one(0)
+
+    def last(self):
+        return self.one(-1)
 
     def _one_or_many(self, ret):
         return len(ret) is 1 and ret[-1] or ret

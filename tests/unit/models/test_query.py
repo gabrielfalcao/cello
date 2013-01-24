@@ -150,7 +150,7 @@ def test_query_and_html_calls_tostring(lhtml):
     dom = Mock()
 
     lhtml.tostring.return_value = '<a></a>'
-    dom.cssselect.return_value = 'whatever'
+    dom.cssselect.return_value = ['whatever']
 
     query = Query(dom)
     expect(query.query('ul.menu li a').html()).to.equal('<a></a>')
