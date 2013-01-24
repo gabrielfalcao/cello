@@ -2,3 +2,4 @@ cssselect==0.7.1
 lxml==3.1beta1
 steadymark>=0.4.3
 sure>=1.1.4
+coverage==3.6
