@@ -18,7 +18,7 @@ required_modules = ['cssselect', 'lxml']
 
 setup(
     name='cello',
-    version='0.0.3',
+    version='0.0.4',
     description='A beautiful instrument for scraping',
     author=u'Gabriel Falcao',
     author_email='gabriel@yipit.com',
