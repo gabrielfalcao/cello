@@ -129,6 +129,10 @@ class Stage(object):
 
     @property
     def url(self):
+        splitted = urlsplit(self._url)
+        if splitted.scheme in ('http', 'https'):
+            return self._url
+
         try:
             url = self.route.translate(self._url)
         except InvalidURLMapping:
@@ -137,14 +141,15 @@ class Stage(object):
 
             return self.get_fallback_url()
 
-        except TypeError:
-            raise InvalidStateURLError(
-                'No URL was given to the stage %s' % self.name)
         else:
             if not (url.startswith('http://') or url.startswith('https://')):
                 return self.get_fallback_url()
             else:
                 return url
+
+    def absolute_url(self, path):
+        result = urlsplit(self.url)
+        return '{}://{}{}'.format(result.scheme, result.netloc, path)
 
     def get_fallback_url(self):
         if not self.parent:
@@ -169,9 +174,9 @@ class Stage(object):
             config=dict(screenshot=self.debug),
         )
 
-    def proceed_to_next(self, link):
+    def proceed_to_next(self, link, using_response=None):
         if self.next_stage:
-            stage = self.next_stage(self.browser, url=link, parent=self)
+            stage = self.next_stage(self.browser, url=link, parent=self, response=using_response)
             stage.fetch()
             try:
                 stage.play()
@@ -180,14 +185,19 @@ class Stage(object):
                 return stage
 
         else:
-            stage = self.__class__(self.browser, url=link, parent=self.parent)
+            stage = self.__class__(self.browser, url=link, parent=self.parent, response=using_response)
             stage.fetch()
+            stage.play()
 
         return stage
 
-    def scrape(self, links):
+    def scrape(self, links, using_response=None):
+        if isinstance(links, basestring):
+            links = [links]
+
         for link in links:
-            stage = self.proceed_to_next(link)
+
+            stage = self.proceed_to_next(link, using_response=using_response)
 
             try:
                 data = stage.tune()
@@ -228,13 +238,13 @@ class Stage(object):
     @classmethod
     def _start(Stage, browser):
         name = Stage.__name__
-        try:
-            stage = Stage(browser, Stage.url)
-            stage.proceed_to_next(Stage.url)
-        except InvalidStateURLError:
+
+        if not isinstance(Stage.url, basestring):
             raise InvalidStateError(
                 'Trying to download content for %s but it has no URL' % name)
 
+        stage = Stage(browser, Stage.url)
+        stage.proceed_to_next(Stage.url)
         data = stage.tune()
         stage.persist(data)
 

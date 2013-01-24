@@ -31,6 +31,32 @@ def test_first_stage_requires_a_url():
         "Trying to download content for FirstStage but it has no URL")
 
 
+def test_stop_scraping_all_of_the_sudden():
+    "Calling .visit() handles CelloStopScraping"
+    browser = Mock()
+
+    class StoppableStage(Stage):
+        url = 'http://foobar.com'
+
+        def play(self):
+            raise CelloStopScraping('LOL')
+
+    browser.get.return_value.html = '<html><ul></ul></html>'
+    browser.get.return_value.url = 'http://foobar.com'
+
+    StoppableStage.visit(browser)
+
+
+def test_absolute_url():
+    "Calling .absolute_url(path) returns absolute url given relative path"
+
+    class AbsoluteStage(Stage):
+        url = 'http://foobar.com'
+
+    st = AbsoluteStage(Mock())
+    expect(st.absolute_url("/123")).to.equal('http://foobar.com/123')
+
+
 def test_stage_without_next_just_persist_as_is():
     "Calling .visit() on a stage with no next stage will persist it as is"
     browser = Mock()
@@ -45,6 +71,9 @@ def test_stage_without_next_just_persist_as_is():
     class FirstStage(Stage):
         url = 'http://foobar.com'
         case = TestCase
+
+        def play(self):
+            pass
 
         def tune(self):
             return {
@@ -104,15 +133,58 @@ def test_url_raises_if_no_parent():
         case = MyCase
 
     browser = Mock()
-    st = SomeStage(browser=browser, url='http://foobar.com')
+    st = SomeStage(browser=browser, url='sfoobar.com')
 
     def get_url():
         return st.url
 
     expect(get_url).when.called.to.throw(
         InvalidURLMapping,
-        "url http://foobar.com does not match pattern (?P<page>\w+).php"
+        "url sfoobar.com does not match pattern (?P<page>\w+).php"
     )
+
+
+def test_url_fallsback_to_parent_if_routed_is_not_absolute():
+    ("Stage.url will get the base url from its parent "
+     "if the routed url is not absolute")
+
+    class MyRoute(Route):
+        url_mapping = 'foo.bar.com/{page}'
+        url_regex = re.compile(r'(?P<page>.*).php')
+
+    class ChildrenSomeStage(Stage):
+        route = MyRoute
+
+    class SomeStage(Stage):
+        url = 'http://awesome.io'
+        next_stage = ChildrenSomeStage
+
+    browser = Mock()
+    parent = SomeStage(browser=browser)
+    st = ChildrenSomeStage(browser=browser, parent=parent, url='/test/one.php')
+
+    expect(st.url).to.equal('http://awesome.io/test/one.php')
+
+
+def test_url_using_mapping():
+    ("Stage.url will attempt to use the URL from the route")
+
+    class MyRoute(Route):
+        url_mapping = 'https://ginger.io/{page}'
+        url_regex = re.compile(r'/(?P<page>.*).php')
+
+    class ChildrenSomeStage(Stage):
+        route = MyRoute
+
+    class SomeStage(Stage):
+        url = 'http://awesome.io'
+        next_stage = ChildrenSomeStage
+
+    browser = Mock()
+    parent = SomeStage(browser=browser)
+    st = ChildrenSomeStage(browser=browser, parent=parent, url='/zero/2.php')
+
+    expect(st.url).to.equal('https://ginger.io/zero/2')
 
 
 def test_url_fallsback_to_parent_if_router_fails():
@@ -160,51 +232,6 @@ def test_fetch_called_with_no_url():
         ValueError, "Try to call tests.unit.models.test_stage.SomeStage.fetch with no url")
 
 
-def test_stage_with_next_stage():
-    "Calling .visit() on a stage with next stage will persist the last stage"
-
-    browser = Mock()
-    r1 = Mock(url='http://request.one', html='<html><ul></ul></html>')
-    r2 = Mock(url='http://request.two/product.php?id=123', html='<html><ul></ul></html>')
-
-    browser.get.side_effect = [r1, r2]
-
-    class TestCase(Case):
-        def save(self, data):
-            expect(data).to.equal({
-                'url': 'http://weewoo.com/product.php?id=123',
-                'response_url': 'http://request.two/product.php?id=123',
-                'whatever': 123,
-            })
-            raise CelloStopScraping
-
-    class LastStage(Stage):
-        case = TestCase
-
-        def play(self):
-            self.scrape(['/product.php?id=123', '/product.php?id=999'])
-
-        def tune(self):
-            return {
-                'whatever': 123,
-                'response_url': self.response.url,
-
-            }
-
-    class FirstStage(Stage):
-        url = 'http://weewoo.com'
-        next_stage = LastStage
-
-    FirstStage.visit(browser)
-
-    browser.get.assert_has_calls([
-        call('http://weewoo.com',
-            config=dict(screenshot=True)),
-        call('http://weewoo.com/product.php?id=123',
-             config=dict(screenshot=True)),
-    ])
-
-
 @patch('cello.models.logger')
 def test_proceed_to_next_logs_when_play_raises_error(logger):
     ("Stage.proceed_to_next logs a warning and returns stage directly when play throws CelloJumpToNextStage")
@@ -228,6 +255,26 @@ def test_proceed_to_next_logs_when_play_raises_error(logger):
     )
 
 
+def test_scrape_should_persist_data_in_the_end():
+    ("Stage.scrape should persist the data after processing each link")
+
+    persist_mock = Mock()
+
+    class FirstStage(Stage):
+        def tune(self):
+            return {
+                'foo': 'bar',
+            }
+
+        persist = persist_mock
+
+    browser = Mock()
+
+    st = FirstStage(browser)
+    st.scrape(['http://google.com'])
+    persist_mock.assert_called_once_with({'foo': 'bar'})
+
+
 @patch('cello.models.logger')
 def test_scrape_logs_when_tune_raises_error(logger):
     ("Stage.scrape logs a warning when tune throws CelloJumpToNextStage")
@@ -239,7 +286,7 @@ def test_scrape_logs_when_tune_raises_error(logger):
     browser = Mock()
 
     st = FirstStage(browser)
-    st.scrape(['http://google.com'])
+    st.scrape('http://google.com')
 
     logger.warning.assert_called_once_with(
         "Jumping to next stage %s when calling .tune() for url %s",
