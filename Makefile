@@ -9,7 +9,7 @@ install_deps:
 	@pip install -r requirements.pip
 
 unit:
-	@nosetests -s --verbosity=2 tests/unit
+	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/unit/
 
 integration:
 	@nosetests -s --verbosity=2 tests/integration
