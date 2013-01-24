@@ -15,6 +15,20 @@ def test_query_methods_never_fail_by_returning_itself():
     expect(query.query('a')).to.be.a(Query)
     expect(query.query('a').attr('href')).to.be.a(Query)
 
+# Testing .__repr__
+
+
+def test_query_and_repr_with_no_objects():
+    "Query by atributes with no objects"
+
+    dom = Mock()
+
+    dom.cssselect.return_value = range(10)
+
+    query = Query(dom)
+
+    expect(repr(query.query('li a'))).to.equal('<Query: "li a" with 10 elements>')
+
 
 # Testing .attr
 
@@ -63,6 +77,8 @@ def test_query_and_attr_with_one_object():
         'http://yipit.com')
 
 
+# .one ()
+
 def test_query_attr_one_with_many_objects():
     "Query by atributes with many and calling .one()"
 
@@ -101,6 +117,90 @@ def test_query_attr_one_with_no_objects():
     query = Query(dom)
 
     expect(query.query('li a').attr('href').one()).to.equal('')
+
+
+# Testing .first
+
+def test_query_attr_first_with_many_objects():
+    "Query by atributes with many and calling .first()"
+
+    dom = Mock()
+    l1 = Mock(attrib={'href': 'http://yipit.com'})
+    l2 = Mock(attrib={'href': 'http://github.com'})
+
+    dom.cssselect.return_value = [l1, l2]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').first()).to.equal(
+        'http://yipit.com')
+
+
+def test_query_attr_first_with_first_object():
+    "Query by atributes with one object"
+
+    dom = Mock()
+    link = Mock(attrib={'href': 'http://yipit.com'})
+
+    dom.cssselect.return_value = [link]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').first()).to.equal(
+        'http://yipit.com')
+
+
+def test_query_attr_first_with_no_objects():
+    "Query by atributes with no objects"
+
+    dom = Mock()
+    dom.cssselect.return_value = []
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').first()).to.equal('')
+
+
+# Testing .last
+
+def test_query_attr_last_with_many_objects():
+    "Query by atributes with many and calling .last()"
+
+    dom = Mock()
+    l1 = Mock(attrib={'href': 'http://yipit.com'})
+    l2 = Mock(attrib={'href': 'http://github.com'})
+
+    dom.cssselect.return_value = [l1, l2]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').last()).to.equal(
+        'http://github.com')
+
+
+def test_query_attr_last_with_last_object():
+    "Query by atributes with one object"
+
+    dom = Mock()
+    link = Mock(attrib={'href': 'http://yipit.com'})
+
+    dom.cssselect.return_value = [link]
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').last()).to.equal(
+        'http://yipit.com')
+
+
+def test_query_attr_last_with_no_objects():
+    "Query by atributes with no objects"
+
+    dom = Mock()
+    dom.cssselect.return_value = []
+
+    query = Query(dom)
+
+    expect(query.query('li a').attr('href').last()).to.equal('')
 
 
 # Testing .text
