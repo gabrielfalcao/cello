@@ -60,7 +60,7 @@ class Query(str):
         return self
 
     def text(self):
-        return self._one_or_many(map(lambda i: i.text.strip(),
+        return self._one_or_many(map(lambda i: i.text and i.text.strip() or '',
                                      self._elements) or '')
 
     def html(self):

@@ -229,6 +229,18 @@ def test_query_and_text_with_many_objects():
     expect(query.query('ul.menu li a').text()).to.equal(['foo', 'bar'])
 
 
+def test_query_and_text_with_none():
+    "Query and retrieve text when it's None"
+
+    dom = Mock()
+    l1 = Mock(text=None)
+
+    dom.cssselect.return_value = [l1]
+
+    query = Query(dom)
+    expect(query.query('ul.menu li a').text()).to.equal([''])
+
+
 def test_query_and_text_with_one_object():
     "Query and retrieve text with one object"
 
