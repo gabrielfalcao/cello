@@ -129,7 +129,11 @@ class Stage(object):
 
     @property
     def url(self):
+        if not self._url:
+            return self._url
+
         splitted = urlsplit(self._url)
+
         if splitted.scheme in ('http', 'https'):
             return self._url
 
@@ -161,7 +165,7 @@ class Stage(object):
         return '{}://{}{}'.format(result.scheme, result.netloc, self._url)
 
     def fetch(self):
-        if not self._url:
+        if not self.url:
             raise ValueError('Try to call {}.fetch with no url'.format(self.name))
 
         self.response = self.get_response(self.url)
@@ -187,7 +191,6 @@ class Stage(object):
         else:
             stage = self.__class__(self.browser, url=link, parent=self.parent, response=using_response)
             stage.fetch()
-            stage.play()
 
         return stage
 
@@ -196,7 +199,6 @@ class Stage(object):
             links = [links]
 
         for link in links:
-
             stage = self.proceed_to_next(link, using_response=using_response)
 
             try:
@@ -216,9 +218,6 @@ class Stage(object):
 
             stage.persist(data)
 
-    def play(self):
-        self.fetch()
-
     def tune(self):
         return {
             'datetime': datetime.now().isoformat(),
@@ -235,22 +234,19 @@ class Stage(object):
         storage = self.case(self)
         return storage.save(final)
 
-    @classmethod
-    def _start(Stage, browser):
-        name = Stage.__name__
+    def play(self):
+        self.proceed_to_next(self.url)
+        data = self.tune()
+        return self.persist(data)
 
+    @classmethod
+    def visit(Stage, browser):
+        name = Stage.__name__
         if not isinstance(Stage.url, basestring):
             raise InvalidStateError(
                 'Trying to download content for %s but it has no URL' % name)
 
-        stage = Stage(browser, Stage.url)
-        stage.proceed_to_next(Stage.url)
-        data = stage.tune()
-        stage.persist(data)
-
-    @classmethod
-    def visit(Stage, browser):
         try:
-            return Stage._start(browser)
+            return Stage(browser).play()
         except CelloStopScraping as e:
             return e

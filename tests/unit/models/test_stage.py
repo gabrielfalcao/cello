@@ -72,9 +72,6 @@ def test_stage_without_next_just_persist_as_is():
         url = 'http://foobar.com'
         case = TestCase
 
-        def play(self):
-            pass
-
         def tune(self):
             return {
                 'whatever': 123
