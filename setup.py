@@ -2,7 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
+
+if sys.version_info[:2] < (2, 6):
+    sys.stderr.write("\033[1;31m")
+    sys.stderr.write("Cello is not supported by python versions < 2.6\n")
+    sys.stderr.write("\033[0m")
+    raise SystemExit(1)
+
 from setuptools import setup
+from cello import version
 
 
 def get_packages():
@@ -16,9 +25,10 @@ def get_packages():
 
 required_modules = ['cssselect', 'lxml', 'couleur']
 
+
 setup(
     name='cello',
-    version='0.0.5',
+    version=version,
     description='A beautiful instrument for scraping',
     author=u'Gabriel Falcao',
     author_email='gabriel@yipit.com',

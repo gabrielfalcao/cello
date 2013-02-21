@@ -8,8 +8,8 @@
 YM.    , YM.    ,  MM    MM YA.   ,A9
  YMbmd'   `Mbmmd'.JMML..JMML.`Ybmd9'
 ```
-# version 0.0.5
-![https://raw.github.com/Yipit/cello/master/icon.png?login=gabrielfalcao&token=837b128ca9c4b1f3cb8e57457238ce38](https://raw.github.com/Yipit/cello/master/icon.png?login=gabrielfalcao&token=837b128ca9c4b1f3cb8e57457238ce38)
+# version 0.1.0
+![http://f.cl.ly/items/2O0i3s3w1m0I2b1e3n1q/Image%202013.02.21%206:26:04%20PM.png](http://f.cl.ly/items/2O0i3s3w1m0I2b1e3n1q/Image%202013.02.21%206:26:04%20PM.png)
 
 
 # Installation

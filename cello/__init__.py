@@ -14,6 +14,7 @@ from .storage import Case
 from .multi.processing import MultiProcessStage
 from .multi.thread import MultiThreadStage
 
+version = '0.1.0'
 
 __all__ = [
     'Stage',
