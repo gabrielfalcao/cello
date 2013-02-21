@@ -1,31 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
+import requests
 from cello import (
-    Stage,
     Case,
-    CelloStopScraping,
     CelloJumpToNextStage,
 )
-from sleepyhollow import SleepyHollow
+from cello import MultiProcessStage as Stage
 
 
 class SayResultsCase(Case):
     def save(self, data):
-        if not 'name' in data:
-            return
-
-        data['source'] = data.get('brand', data.get('designer', 'unknown source'))
-        os.system("say '{name} by {source}'".format(**data))
-        os.system("say 'its full price is {full_price} but its sale price is {sale_price}'".format(**data))
-        os.system('open %s' % data['image'])
-        raise CelloStopScraping
+        print data
 
 
 class EachFabProduct(Stage):
     case = SayResultsCase
 
     def play(self):
+        print self.url
         self.scrape(self.dom.query('a[href*="/product/"]').attr("href").raw())
 
     def tune(self):
@@ -46,18 +38,16 @@ class EachFabProduct(Stage):
         return data
 
 
-class EachFabBrand(Stage):
+class Fab(Stage):
+    url = 'http://fab.com'
     next_stage = EachFabProduct
 
     def play(self):
+        self.fetch()
         self.scrape(self.dom.query('a[href*="/sale/"]').attr("href").raw())
 
 
-class Fab(Stage):
-    url = 'http://fab.com'
-    next_stage = EachFabBrand
+def browser_factory():
+    return requests
 
-
-def test_scraping():
-    "Scraping from FAB"
-    Fab.visit(SleepyHollow())
+Fab.visit(browser_factory)

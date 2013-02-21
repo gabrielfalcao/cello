@@ -11,9 +11,14 @@ from .helpers import Route
 from .helpers import InvalidURLMapping
 from .storage import Case
 
+from .multi.processing import MultiProcessStage
+from .multi.thread import MultiThreadStage
+
 
 __all__ = [
     'Stage',
+    'MultiProcessStage',
+    'MultiThreadStage',
     'Route',
     'Case',
     'DOMWrapper',

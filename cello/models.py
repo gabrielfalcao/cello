@@ -101,7 +101,7 @@ class DOMWrapper(object):
 
     @classmethod
     def from_response(cls, response):
-        return cls(lhtml.fromstring(response.html))
+        return cls(lhtml.fromstring(response))
 
 
 class Stage(object):
@@ -178,9 +178,19 @@ class Stage(object):
             config=dict(screenshot=self.debug),
         )
 
-    def proceed_to_next(self, link, using_response=None):
+    def get_next_stage(self):
         if self.next_stage:
-            stage = self.next_stage(self.browser, url=link, parent=self, response=using_response)
+            Stage = self.next_stage
+        else:
+            Stage = self.__class__
+
+        return Stage
+
+    def proceed_to_next(self, link, using_response=None):
+        NextStage = self.get_next_stage()
+
+        if self.next_stage:
+            stage = NextStage(self.browser, url=link, parent=self, response=using_response)
             stage.fetch()
             try:
                 stage.play()
@@ -189,7 +199,7 @@ class Stage(object):
                 return stage
 
         else:
-            stage = self.__class__(self.browser, url=link, parent=self.parent, response=using_response)
+            stage = NextStage(self.browser, url=link, parent=self.parent, response=using_response)
             stage.fetch()
 
         return stage
@@ -240,13 +250,14 @@ class Stage(object):
         return self.persist(data)
 
     @classmethod
-    def visit(Stage, browser):
+    def visit(Stage, browser, *args, **kw):
         name = Stage.__name__
         if not isinstance(Stage.url, basestring):
             raise InvalidStateError(
                 'Trying to download content for %s but it has no URL' % name)
 
         try:
-            return Stage(browser).play()
+            stage = Stage(browser, *args, **kw)
+            stage.play()
         except CelloStopScraping as e:
             return e

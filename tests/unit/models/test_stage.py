@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import re
 from mock import Mock
-from mock import call
 from mock import patch
 from sure import expect
 from cello import models

@@ -14,7 +14,7 @@ def get_packages():
 
     return packages
 
-required_modules = ['cssselect', 'lxml']
+required_modules = ['cssselect', 'lxml', 'couleur']
 
 setup(
     name='cello',

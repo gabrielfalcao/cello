@@ -11,7 +11,7 @@ from cello.models import (
 def test_dom_wrapper_from_response(lhtml):
     "DOMWrapper.from_response creates a DOM from "
 
-    response = Mock(html='<html></html>')
+    response = '<html></html>'
     wrapper = DOMWrapper.from_response(response)
 
     lhtml.fromstring.assert_called_once_with('<html></html>')
