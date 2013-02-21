@@ -242,6 +242,33 @@ class Fab(Stage):
 Fab.visit(Browser())
 ````
 
+# Speeding up your stages by adding multiprocess support
+
+It's easier than you can imagine :+1: !!
+
+Instead of importing `Stage` like this:
+
+```python
+from cello import Stage
+```
+
+Just import like this
+
+```python
+from cello.multi.processing import MultiProcessingStage as Stage
+```
+
+If you need multi
+[multi-threading](http://docs.python.org/2/library/threading.html)
+over
+[multi-processing](http://docs.python.org/2/library/multiprocessing.html)
+just use the `MultiThreadStage`.
+
+```python
+from cello.multi.thread import MultiThreadStage as Stage
+```
+
+
 # See it working
 
 You can download it here [https://www.dropbox.com/s/icfbx9eft97h8co/Cello.mov](https://www.dropbox.com/s/icfbx9eft97h8co/Cello.mov)
