@@ -8,7 +8,7 @@
 YM.    , YM.    ,  MM    MM YA.   ,A9
  YMbmd'   `Mbmmd'.JMML..JMML.`Ybmd9'
 ```
-# version 0.1.0
+# version 0.1.1
 ![http://f.cl.ly/items/2O0i3s3w1m0I2b1e3n1q/Image%202013.02.21%206:26:04%20PM.png](http://f.cl.ly/items/2O0i3s3w1m0I2b1e3n1q/Image%202013.02.21%206:26:04%20PM.png)
 
 
