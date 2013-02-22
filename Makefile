@@ -6,18 +6,22 @@ export CELLO_NO_COLORS:=  true
 localshop="http://localshop.staging.yipit.com:8900/"
 
 install_deps:
-	@pip install -r requirements.pip
+	@printf "Installing dependencies... "
+	@(pip install -r requirements.pip) 2>&1>dependencies.log
+	@echo "OK"
 
-unit: clean
+unit: prepare
 	@nosetests --with-coverage --stop --cover-package=cello --verbosity=2 -s tests/unit/
 
-integration:
+integration: prepare
 	@nosetests -s --verbosity=2 tests/integration
 
-docs:
+docs: prepare
 	@steadymark README.md
 
 test: unit integration docs
+
+prepare: clean install_deps
 
 clean:
 	@printf "Cleaning up files that are already in .gitignore... "
