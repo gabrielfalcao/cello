@@ -104,10 +104,23 @@ class DOMWrapper(object):
         return cls(lhtml.fromstring(response))
 
 
+class StagePrecedenceRegistry(type):
+    def __init__(cls, name, bases, attrs):
+        super(StagePrecedenceRegistry, cls).__init__(name, bases, attrs)
+
+        if 'cello.' in cls.__module__:
+            return
+
+        next_stage = getattr(cls, 'next_stage', None)
+        if next_stage is not None:
+            next_stage.previous_stage = cls
+
+
 class Stage(object):
     route = Route
     case = DummyCase
     next_stage = None
+    __metaclass__ = StagePrecedenceRegistry
 
     def __init__(self, browser, url=None, response=None, parent=None):
         self.browser = browser
@@ -125,7 +138,7 @@ class Stage(object):
                 "and so its DOM can't be queryed" % self.name
             )
 
-        return DOMWrapper.from_response(self.response)
+        return DOMWrapper.from_response(self.response.content)
 
     @property
     def url(self):

@@ -54,11 +54,11 @@ class EachSKUBananaRepublic(Stage):
         except Exception:
             logger.exception(
                 "Could not evaluate javascript for %s (%s)",
-                product_name, self.response.url)
+                product_name, self.url)
             return
 
         if len(skus) is 0:
-            msg = "%s out of stock: %s" % (self.url, self.response.url)
+            msg = "%s out of stock" % (self.url)
             logging.info(msg)
             return
 

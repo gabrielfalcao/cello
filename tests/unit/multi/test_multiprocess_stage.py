@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
+import sys
 import json
 from mock import Mock, call, patch
 from cello.models import CelloStopScraping
@@ -25,7 +25,7 @@ def test_get_response_with_sleepyhollow_responses():
 
     response = s.get_response('http://some-url.com')
 
-    response.should.equal('HTML coming from SleepyHollow().get().html')
+    response.should.be.a(ResponseFromSleepyHollow)
 
 
 def test_get_response_with_requests_responses():
@@ -44,7 +44,7 @@ def test_get_response_with_requests_responses():
 
     response = s.get_response('http://some-url.com')
 
-    response.should.equal('HTML coming from requests.get().content')
+    response.should.be.a(ResponseFromRequestsModule)
 
 
 def test_proceed_to_next_returns_a_process_with_current_stage_if_not_next():
@@ -82,6 +82,7 @@ def test_proceed_to_next_returns_a_process_with_current_stage_if_not_next():
             'parent_response': 'some response',
             'queue': queue,
             'worker_queue': worker_queue,
+            'parent': None
         }
     )
 
@@ -123,6 +124,7 @@ def test_proceed_to_next_returns_a_process_with_next_stage():
             'parent_response': 'some response',
             'queue': queue,
             'worker_queue': worker_queue,
+            'parent': s,
         }
     )
 
@@ -212,45 +214,6 @@ def test_consume_queue():
     MyStage.persist_next_queued_item.call_count.should.equal(3)
 
 
-def test_persist_next_queued_item_without_error_and_case():
-    ("MultiProcessStage#persist_next_queued_item with no error and no case")
-
-    browser_factory = Mock()
-    worker_queue = Mock()
-    scrape_queue = Mock()
-    scrape_queue.get.return_value = json.dumps({
-        'function': 'some_function',
-        'module': 'some.module',
-        'pid': 66,
-    })
-
-    st = Stage(browser_factory, worker_queue, queue=scrape_queue)
-
-    scrape_queue.task_done.called.should.be.false
-
-    st.persist_next_queued_item()
-
-    scrape_queue.task_done.called.should.be.true
-
-
-def test_persist_next_queued_item_without_error():
-    ("MultiProcessStage#persist_next_queued_item with no error and no case")
-
-    browser_factory = Mock()
-    worker_queue = Mock()
-    scrape_queue = Mock()
-    scrape_queue.get.return_value = json.dumps(['CelloStopScraping', ('the message',)])
-
-    st = Stage(browser_factory, worker_queue, queue=scrape_queue)
-
-    scrape_queue.task_done.called.should.be.false
-
-    st.persist_next_queued_item.when.called.to.throw(
-        CelloStopScraping, 'the message')
-
-    scrape_queue.task_done.called.should.be.true
-
-
 def test_persist_next_queued_item_with_case():
     ("MultiProcessStage#persist_next_queued_item with a case "
      "will spawn a worker for persisting that data")
@@ -275,8 +238,6 @@ def test_persist_next_queued_item_with_case():
 
     st = MyStage(browser_factory, worker_queue, queue=scrape_queue)
 
-    scrape_queue.task_done.called.should.be.false
-
     st.persist_next_queued_item()
 
     process_mock.assert_called_once_with(
@@ -287,16 +248,30 @@ def test_persist_next_queued_item_with_case():
             "case_name": 'SomeCase',
             "data": {'foo': 'bar'},
             "stage": MyStage.make_children_stage.return_value,
+            "results_queue": scrape_queue,
         }
     )
     process_mock.return_value.start.assert_called_once_with()
     worker_queue.wait_for_slot.assert_called_once_with(
         'persist_async', 'tests.unit.multi.test_multiprocess_stage')
 
-    scrape_queue.task_done.called.should.be.true
     MyStage.import_stage.assert_called_once_with('what.ever', 'WhateverStage')
     MyStage.make_children_stage.assert_called_once_with(
         MyStage.import_stage.return_value)
+
+
+def test_persist_next_queued_item_with_an_error():
+    ("MultiProcessStage#persist_next_queued_item upon error should raise it")
+
+    browser_factory = Mock()
+    worker_queue = Mock()
+    scrape_queue = Mock()
+    scrape_queue.get.return_value = json.dumps(['CelloStopScraping', ('the message',)])
+
+    st = Stage(browser_factory, worker_queue, queue=scrape_queue)
+
+    st.persist_next_queued_item.when.called.to.throw(
+        CelloStopScraping, 'the message')
 
 
 def test_visit():
@@ -314,7 +289,7 @@ def test_visit():
     MyStage.visit(browser_factory, max_workers=30)
 
     MyStage.play.assert_called_once_with()
-    MyStage.WorkerQueue.assert_called_once_with(30)
+    MyStage.WorkerQueue.assert_called_once_with(30, output=sys.stdout)
 
 
 @patch('cello.multi.base.couleur')
@@ -333,7 +308,7 @@ def test_visit_with_keyboard_interrupt(couleur):
     MyStage.visit(browser_factory, max_workers=30)
 
     MyStage.play.assert_called_once_with()
-    MyStage.WorkerQueue.assert_called_once_with(30)
+    MyStage.WorkerQueue.assert_called_once_with(30, output=sys.stdout)
 
     couleur.Shell.return_value.bold_red.assert_called_once_with("User pressed CONTROL-C\n")
 
@@ -361,6 +336,7 @@ def test_make_children_stage():
     StageClassMock.assert_called_once_with(
         browser_factory,
         worker_queue,
+        parent=stage,
         parent_response='parent response',
         queue='some queue',
     )

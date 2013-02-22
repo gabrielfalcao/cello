@@ -3,21 +3,25 @@
 import requests
 from cello import (
     Case,
-    CelloJumpToNextStage,
+    CelloStopScraping,
+    CelloJumpToNextStage
 )
 from cello import MultiProcessStage as Stage
 
 
 class SayResultsCase(Case):
     def save(self, data):
-        print data
+        if data:
+            raise CelloStopScraping
 
 
 class EachFabProduct(Stage):
     case = SayResultsCase
 
     def play(self):
-        print self.url
+        if not self.url.startswith('http://fab.com'):
+            raise CelloJumpToNextStage('not a fab url: {}'.format(self.url))
+
         self.scrape(self.dom.query('a[href*="/product/"]').attr("href").raw())
 
     def tune(self):
@@ -44,10 +48,13 @@ class Fab(Stage):
 
     def play(self):
         self.fetch()
-        self.scrape(self.dom.query('a[href*="/sale/"]').attr("href").raw())
+        self.scrape(self.dom.query('a[href*="/product/"]').attr("href").raw())
 
 
 def browser_factory():
     return requests
 
-Fab.visit(browser_factory)
+
+def test_scraping():
+    "Scraping Fab.com"
+    Fab.visit(browser_factory)

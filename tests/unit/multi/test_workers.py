@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from mock import MagicMock, Mock, patch
+from mock import Mock, patch
 from cello.storage import Case
 from cello.models import BadTuneReturnValue
 from cello.models import CelloJumpToNextStage
@@ -11,19 +11,21 @@ from cello.models import InvalidURLMapping
 from cello.models import InvalidStateURLError
 from cello.multi.workers import persist_async
 from cello.multi.workers import fetch_async
+from cello.multi.workers import handle_exception
 
 
 class MockedCase(Case):
-    persist = Mock()
+    save = Mock()
 
 
 def test_persist_async_with_data():
     ("cello.multi.workers.persist_async should "
      "persist the given data appropriately")
-    MockedCase.persist.reset_mock()
+    MockedCase.save.reset_mock()
 
     stage = Mock()
     worker_queue = Mock()
+    results_queue = Mock()
 
     data = {
         'name': 'Gabriel',
@@ -34,21 +36,23 @@ def test_persist_async_with_data():
         case_name='MockedCase',
         data=data,
         worker_queue=worker_queue,
+        results_queue=results_queue,
     )
 
-    MockedCase.persist.assert_called_once_with(data)
+    MockedCase.save.assert_called_once_with(data)
     worker_queue.work_done.assert_called_once_with()
 
 
 def test_persist_async_without_data():
     ("cello.multi.workers.persist_async should "
      "raise when there is no data, but should also clear the queue")
-    MockedCase.persist.reset_mock()
+    MockedCase.save.reset_mock()
 
     class FakeStage(object):
         url = 'foobar.com'
 
     worker_queue = Mock()
+    results_queue = Mock()
 
     persist_async.when.called_with(
         stage=FakeStage(),
@@ -56,11 +60,42 @@ def test_persist_async_without_data():
         case_name='MockedCase',
         data={},
         worker_queue=worker_queue,
+        results_queue=results_queue,
     ).should.throw(BadTuneReturnValue)
 
-    MockedCase.persist.called.should.be.false
+    MockedCase.save.called.should.be.false
 
     worker_queue.work_done.assert_called_once_with()
+
+
+def test_persist_async_upon_case_cello_exception():
+    ("cello.multi.workers.persist_async upon exception "
+     "should enqueue the exception data in the results "
+     "queue and close the worker queue")
+    MockedCase.save.reset_mock()
+
+    MockedCase.save.side_effect = CelloStopScraping("c'mon dawg !!!")
+
+    class FakeStage(object):
+        url = 'foobar.com'
+
+    worker_queue = Mock()
+    results_queue = Mock()
+
+    persist_async(
+        stage=FakeStage(),
+        case_module_name='tests.unit.multi.test_workers',
+        case_name='MockedCase',
+        data={'some': 'data'},
+        worker_queue=worker_queue,
+        results_queue=results_queue,
+    )
+
+    worker_queue.work_done.assert_called_once_with()
+    worker_queue.close.assert_called_once_with()
+    results_queue.put.assert_called_once_with(json.dumps((
+        'CelloStopScraping', ("c'mon dawg !!!", )
+    )))
 
 
 def test_fetch_async_persisting_afterwards():
@@ -165,23 +200,6 @@ def test_fetch_upon_error_sends_exception_information_to_queue_stage_tune():
     queue.put.assert_called_once_with(json.dumps(['InvalidURLMapping', ['stop now!', 0x101010]]))
 
 
-def test_fetch_upon_jump_to_next_exception_just_raises():
-    ("cello.multi.workers.tune_async just raises in case the exception raised is CelloJumpToNextStage")
-
-    browser_factory, queue, worker_queue = (Mock(), ) * 3
-
-    MockStage = Mock()
-    stage = MockStage.return_value
-    stage.tune.side_effect = CelloJumpToNextStage('just jump to next')
-
-    fetch_async.when.called_with(
-        MockStage, browser_factory, queue, worker_queue,
-        url="some-url", parent_response="parent response").should.throw(
-            CelloJumpToNextStage, "just jump to next")
-
-    worker_queue.work_done.assert_called_once_with()
-
-
 def test_fetch_upon_system_exception_just_raises():
     ("cello.multi.workers.tune_async just raises in case the exception "
      "raised is not defined in `cello.models`")
@@ -217,3 +235,14 @@ def test_fetch_async_upon_unicode_decode_error_of_serialization(json):
 
     worker_queue.work_done.assert_called_once_with()
     queue.put.called.should.be.false
+
+
+def test_handle_exception():
+    ("cello.multi.workers.handle_exception when "
+     "called with CelloJumpToNextStage should do some logging")
+
+    # TODO add logging and make this test pass
+
+    exc = CelloJumpToNextStage('whatever, just log me up bro...')
+
+    handle_exception(exc)

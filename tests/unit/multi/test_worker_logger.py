@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
+from StringIO import StringIO
 from mock import patch
 from cello.multi.base import WorkerLogger
 
@@ -14,7 +14,7 @@ def test_process_await(datetime, couleur):
     datetime.now.return_value = "now :)"
     sh = couleur.Shell.return_value
 
-    logger = WorkerLogger()
+    logger = WorkerLogger(StringIO())
 
     logger.process_await('some_function', 'some pid')
 
@@ -32,7 +32,7 @@ def test_permission_to_run(datetime, couleur):
     datetime.now.return_value = "now :)"
     sh = couleur.Shell.return_value
 
-    logger = WorkerLogger()
+    logger = WorkerLogger(StringIO())
 
     logger.permission_to_run('some_function', 'some pid')
 
@@ -49,7 +49,7 @@ def test_process_done(datetime, couleur):
     datetime.now.return_value = "now :)"
     sh = couleur.Shell.return_value
 
-    logger = WorkerLogger()
+    logger = WorkerLogger(StringIO())
 
     logger.process_done('some_function', 'some pid')
 

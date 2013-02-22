@@ -23,7 +23,7 @@ def get_packages():
 
     return packages
 
-required_modules = ['cssselect', 'lxml', 'couleur']
+required_modules = ['cssselect', 'lxml', 'couleur==0.5.0']
 
 
 setup(

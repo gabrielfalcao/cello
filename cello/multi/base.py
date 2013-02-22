@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import sys
 import json
 import couleur
 import importlib
@@ -16,8 +17,8 @@ DEFAULT_MAX_WORKERS = cpu_count()
 
 
 class WorkerLogger(object):
-    def __init__(self):
-        self.sh = couleur.Shell()
+    def __init__(self, output):
+        self.sh = couleur.Shell(output=output)
 
     def log_prefix(self):
         self.sh.bold_white("[{0}] <~ ".format(datetime.now()))
@@ -42,16 +43,21 @@ class WorkerLogger(object):
 
 
 class BaseWorkerQueue(object):
-    def __init__(self, max_workers):
+    def __init__(self, max_workers, output):
         self.q = self.make_queue(int(max_workers))
         self.max_workers = max_workers
-        self.log = WorkerLogger()
+        self.log = WorkerLogger(output)
 
     def make_queue(self, max_workers):
         raise NotImplementedError
 
+    def close(self):
+        self.q.close()
+        self.q.join_thread()
+
     def work_done(self):
         data = self.q.get(block=True, timeout=None)
+
         self.log.process_done(
             function_name=data['function'],
             pid=data['pid'],
@@ -78,31 +84,32 @@ class BaseMultiProcessStage(Stage):
     Process = None
 
     def __init__(self, browser_factory, worker_queue,
-                 url=None, parent_response=None, queue=None):
+                 url=None, parent_response=None, queue=None, *args, **kw):
 
         self.browser_factory = browser_factory
         self.parent_response = parent_response
         self.worker_queue = worker_queue
         self.queue = queue or worker_queue.make_queue(DEFAULT_MAX_WORKERS)
 
-        super(BaseMultiProcessStage, self).__init__(
-            None, url=url)
+        super(BaseMultiProcessStage, self).__init__(None, url=url, *args, **kw)
 
     def get_response(self, url):
         http = self.browser_factory()
-        response = http.get(url)
-        if hasattr(response, 'html'):
-            return response.html
-        else:
-            return response.content
+        return http.get(url)
 
     def proceed_to_next(self, link, using_response=None):
         Stage = self.get_next_stage()
+        if Stage == self.__class__:
+            parent = self.parent
+        else:
+            parent = self
+
         return self.Process(target=fetch_async,
                             name=link,
                             args=(Stage, self.browser_factory),
                             kwargs=dict(
                                 url=link,
+                                parent=parent,
                                 parent_response=using_response,
                                 queue=self.queue,
                                 worker_queue=self.worker_queue))
@@ -122,6 +129,7 @@ class BaseMultiProcessStage(Stage):
         return StageClass(
             self.browser_factory,
             self.worker_queue,
+            parent=self,
             parent_response=self.parent_response,
             queue=self.queue,
         )
@@ -134,7 +142,6 @@ class BaseMultiProcessStage(Stage):
     def persist_next_queued_item(self):
         raw = self.queue.get()
         data = json.loads(raw)
-        self.queue.task_done()
 
         is_error = isinstance(data, list)
         if is_error:
@@ -154,6 +161,7 @@ class BaseMultiProcessStage(Stage):
                 kwargs={
                     "stage": stage,
                     "worker_queue": self.worker_queue,
+                    "results_queue": self.queue,
                     "case_module_name": data.pop('case.module'),
                     "case_name": data.pop('case.name'),
                     "data": data})
@@ -166,13 +174,20 @@ class BaseMultiProcessStage(Stage):
 
     @classmethod
     def visit(Stage, browser_factory,
-              max_workers=DEFAULT_MAX_WORKERS, *args, **kw):
+              max_workers=DEFAULT_MAX_WORKERS, output=None, *args, **kw):
 
-        worker_queue = Stage.WorkerQueue(max_workers)
+        worker_queue = Stage.WorkerQueue(max_workers, output=output or sys.stdout)
+        waits = [worker_queue.wait_for_slot('preparing worker {0} for {1}'.format(x, Stage.__name__), Stage.__module__) for x in range(1, max_workers)]
+
         kw['worker_queue'] = worker_queue
         try:
-            return super(BaseMultiProcessStage, Stage).visit(
+            super(BaseMultiProcessStage, Stage).visit(
                 browser_factory, *args, **kw)
+
+            while waits:
+                worker_queue.work_done()
+                waits.pop()
+
         except KeyboardInterrupt:
             sh = couleur.Shell()
             sh.bold_red("User pressed CONTROL-C\n")
